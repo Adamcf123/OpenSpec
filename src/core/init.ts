@@ -722,34 +722,28 @@ export class InitCommand {
     openspecPath: string,
     config: OpenSpecConfig
   ): Promise<void> {
-    await this.writeTemplateFiles(openspecPath, config, false);
+    await this.writeTemplateFiles(openspecPath, config);
   }
 
   private async ensureTemplateFiles(
     openspecPath: string,
     config: OpenSpecConfig
   ): Promise<void> {
-    await this.writeTemplateFiles(openspecPath, config, true);
+    await this.writeTemplateFiles(openspecPath, config);
   }
 
   private async writeTemplateFiles(
     openspecPath: string,
-    config: OpenSpecConfig,
-    skipExisting: boolean
+    config: OpenSpecConfig
   ): Promise<void> {
     const context: ProjectContext = {
       // Could be enhanced with prompts for project details
     };
 
-    const templates = TemplateManager.getTemplates(context);
+    const templates = await TemplateManager.getTemplates(context);
 
     for (const template of templates) {
       const filePath = path.join(openspecPath, template.path);
-
-      // Skip if file exists and we're in skipExisting mode
-      if (skipExisting && (await FileSystemUtils.fileExists(filePath))) {
-        continue;
-      }
 
       const content =
         typeof template.content === 'function'

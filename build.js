@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'child_process';
-import { existsSync, rmSync } from 'fs';
+import { existsSync, rmSync, copyFileSync } from 'fs';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -24,6 +24,11 @@ console.log('Compiling TypeScript...');
 try {
   runTsc(['--version']);
   runTsc();
+
+  // Copy template files
+  console.log('Copying template files...');
+  copyFileSync('src/core/templates/agents.md', 'dist/core/templates/agents.md');
+
   console.log('\n✅ Build completed successfully!');
 } catch (error) {
   console.error('\n❌ Build failed!');

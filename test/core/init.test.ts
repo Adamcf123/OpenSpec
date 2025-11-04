@@ -597,7 +597,7 @@ describe('InitCommand', () => {
       );
     });
 
-    it('should preserve existing template files in extend mode', async () => {
+    it('should overwrite existing template files in extend mode', async () => {
       queueSelections('claude', DONE, DONE);
 
       // First init
@@ -609,12 +609,12 @@ describe('InitCommand', () => {
       // Modify the file with custom content
       await fs.writeFile(agentsPath, customContent);
 
-      // Run init again - should NOT overwrite
+      // Run init again - should overwrite with fresh template content
       await initCommand.execute(testDir);
 
       const content = await fs.readFile(agentsPath, 'utf-8');
-      expect(content).toBe(customContent);
-      expect(content).not.toContain('OpenSpec Instructions');
+      expect(content).toContain('OpenSpec Instructions');
+      expect(content).not.toBe(customContent);
     });
 
     it('should handle non-existent target directory', async () => {

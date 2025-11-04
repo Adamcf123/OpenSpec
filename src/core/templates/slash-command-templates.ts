@@ -1,4 +1,5 @@
 export type SlashCommandId = 'proposal' | 'apply' | 'archive';
+import fs from 'fs';
 
 const baseGuardrails = `**Guardrails**
 - Favor straightforward, minimal implementations first and add complexity only when it is requested or clearly required.
@@ -9,11 +10,11 @@ const proposalGuardrails = `${baseGuardrails}\n- Identify any vague or ambiguous
 
 const proposalSteps = `**Steps**
 1. Review \`openspec/project.md\`, run \`openspec list\` and \`openspec list --specs\`, and inspect related code or docs (e.g., via \`rg\`/\`ls\`) to ground the proposal in current behaviour; note any gaps that require clarification.
-2. Choose a unique verb-led \`change-id\` and scaffold \`proposal.md\`, \`tasks.md\`, and \`design.md\` (when needed) under \`openspec/changes/<id>/\`.
+2. Choose a unique verb-led \`change-id\` and scaffold full versions of \`proposal.md\`, \`tasks.md\`, and \`design.md\` under \`openspec/changes/<id>/\`, pre-populating each file with detailed sections (problem statement, evidence, multi-surface approach, risks, rollout, etc.).
 3. Map the change into concrete capabilities or requirements, breaking multi-scope efforts into distinct spec deltas with clear relationships and sequencing.
-4. Capture architectural reasoning in \`design.md\` when the solution spans multiple systems, introduces new patterns, or demands trade-off discussion before committing to specs.
+4. Capture architectural reasoning in \`design.md\`, documenting context, goals/non-goals, architecture overview, explicit decision records, failure modes, rollout/rollback strategy, and the end-to-end test plan before committing to specs.
 5. Draft spec deltas in \`changes/<id>/specs/<capability>/spec.md\` (one folder per capability) using \`## ADDED|MODIFIED|REMOVED Requirements\` with at least one \`#### Scenario:\` per requirement and cross-reference related capabilities when relevant.
-6. Draft \`tasks.md\` as an ordered list of small, verifiable work items that deliver user-visible progress, include validation (tests, tooling), and highlight dependencies or parallelizable work.
+6. Draft \`tasks.md\` as an ordered list of small, verifiable work items grouped by discovery, implementation, validation, and rollout so each task has a clear input/output and validation hook.
 7. Validate with \`openspec validate <id> --strict\` and resolve every issue before sharing the proposal.`;
 
 const proposalReferences = `**Reference**
@@ -47,12 +48,21 @@ const archiveReferences = `**Reference**
 - Use \`openspec list\` to confirm change IDs before archiving.
 - Inspect refreshed specs with \`openspec list --specs\` and address any validation issues before handing off.`;
 
-export const slashCommandBodies: Record<SlashCommandId, string> = {
+const slashCommandBodies: Record<SlashCommandId, string> = {
   proposal: [proposalGuardrails, proposalSteps, proposalReferences].join('\n\n'),
   apply: [baseGuardrails, applySteps, applyReferences].join('\n\n'),
   archive: [baseGuardrails, archiveSteps, archiveReferences].join('\n\n')
 };
 
 export function getSlashCommandBody(id: SlashCommandId): string {
-  return slashCommandBodies[id];
+  // Prefer external text templates under ./slash-bodies/*.txt if present,
+  // fallback to the built-in string templates to keep backward compatibility.
+  try {
+    const url = new URL(`./slash-bodies/${id}.txt`, import.meta.url);
+    const content = fs.readFileSync(url, 'utf-8');
+    const trimmed = content.trim();
+    return trimmed.length ? trimmed : slashCommandBodies[id];
+  } catch {
+    return slashCommandBodies[id];
+  }
 }

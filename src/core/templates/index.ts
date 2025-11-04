@@ -1,4 +1,4 @@
-import { agentsTemplate } from './agents-template.js';
+import { getAgentsTemplate } from './agents-template.js';
 import { projectTemplate, ProjectContext } from './project-template.js';
 import { claudeTemplate } from './claude-template.js';
 import { clineTemplate } from './cline-template.js';
@@ -11,7 +11,8 @@ export interface Template {
 }
 
 export class TemplateManager {
-  static getTemplates(context: ProjectContext = {}): Template[] {
+  static async getTemplates(context: ProjectContext = {}): Promise<Template[]> {
+    const agentsTemplate = await getAgentsTemplate();
     return [
       {
         path: 'AGENTS.md',

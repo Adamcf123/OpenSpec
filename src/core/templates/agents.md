@@ -464,17 +464,14 @@ notifications/spec.md
 
 ## Best Practices
 
-### Simplicity First
-- Default to <100 lines of new code
-- Single-file implementations until proven insufficient
-- Avoid frameworks without clear justification
-- Choose boring, proven patterns
-
-### Complexity Triggers
-Only add complexity with:
-- Performance data showing current solution too slow
-- Concrete scale requirements (>1000 users, >100MB data)
-- Multiple proven use cases requiring abstraction
+### Architecture-First Guidelines
+- 必须系统性检索源代码与规格，识别过度实现/过度设计，并以最优架构为唯一评判标准做决策。
+- 必须优先复用现有模块、函数、类；如存在功能重叠，必须合并而非并存。
+- 禁止为保持向后兼容而导致新功能/新函数不可生效；如两者冲突，必须优先新能力并移除兼容层。
+- 属于破坏性变更的内容，必须直接落实删除或替换；不得保留兼容分支或折中实现。
+- 修改规格时，必须直接在对应 specs 文件中更新最终状态；不得在文档中添加对原规格的评价或“退役/废弃/删除”等标志。
+- 进行规格修改前，必须阅读并遵循 `cwd/openspec/AGENTS.md` 的流程与格式要求。
+- 禁止伪造或假定不存在的模块、库或外部依赖。
 
 ### Clear and Specific References
 All work must be specific, referencing code artifacts precisely. Vague descriptions lead to incorrect implementations.

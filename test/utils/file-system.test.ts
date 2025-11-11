@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import { randomUUID } from 'crypto';
 import { FileSystemUtils } from '../../src/utils/file-system.js';
+import { CLAUDE_CODE_CLI_SLASH_COMMAND_PATHS } from '../../src/core/configurators/slash/claude.js';
 
 describe('FileSystemUtils', () => {
   let testDir: string;
@@ -165,9 +166,11 @@ describe('FileSystemUtils', () => {
     it('should join POSIX-style paths', () => {
       const result = FileSystemUtils.joinPath(
         '/tmp/project',
-        '.claude/commands/openspec/proposal.md'
+        CLAUDE_CODE_CLI_SLASH_COMMAND_PATHS.proposal
       );
-      expect(result).toBe('/tmp/project/.claude/commands/openspec/proposal.md');
+      expect(result).toBe(
+        `/tmp/project/${CLAUDE_CODE_CLI_SLASH_COMMAND_PATHS.proposal}`
+      );
     });
 
     it('should join Linux home directory paths', () => {
@@ -181,11 +184,13 @@ describe('FileSystemUtils', () => {
     it('should join Windows drive-letter paths with backslashes', () => {
       const result = FileSystemUtils.joinPath(
         'C:\\Users\\dev\\project',
-        '.claude/commands/openspec/proposal.md'
+        CLAUDE_CODE_CLI_SLASH_COMMAND_PATHS.proposal
       );
-      expect(result).toBe(
-        'C:\\Users\\dev\\project\\.claude\\commands\\openspec\\proposal.md'
+      const windowsRelative = CLAUDE_CODE_CLI_SLASH_COMMAND_PATHS.proposal.replace(
+        /\//g,
+        '\\'
       );
+      expect(result).toBe(`C:\\Users\\dev\\project\\${windowsRelative}`);
     });
 
     it('should join Windows paths that use forward slashes', () => {

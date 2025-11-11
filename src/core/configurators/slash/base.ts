@@ -1,6 +1,5 @@
 import { FileSystemUtils } from '../../../utils/file-system.js';
 import { TemplateManager, SlashCommandId } from '../../templates/index.js';
-import { OPENSPEC_MARKERS } from '../../config.js';
 
 export interface SlashCommandTarget {
   id: SlashCommandId;
@@ -26,7 +25,7 @@ export abstract class SlashCommandConfigurator {
     const createdOrUpdated: string[] = [];
 
     for (const target of this.getTargets()) {
-      const body = this.getBody(target.id);
+      const body = this.normalizeBody(this.getBody(target.id));
       const filePath = FileSystemUtils.joinPath(projectPath, target.path);
 
       if (await FileSystemUtils.fileExists(filePath)) {
@@ -37,8 +36,8 @@ export abstract class SlashCommandConfigurator {
         if (frontmatter) {
           sections.push(frontmatter.trim());
         }
-        sections.push(`${OPENSPEC_MARKERS.start}\n${body}\n${OPENSPEC_MARKERS.end}`);
-        const content = sections.join('\n') + '\n';
+        sections.push(body.trim());
+        const content = sections.join('\n\n') + '\n';
         await FileSystemUtils.writeFile(filePath, content);
       }
 
@@ -54,7 +53,7 @@ export abstract class SlashCommandConfigurator {
     for (const target of this.getTargets()) {
       const filePath = FileSystemUtils.joinPath(projectPath, target.path);
       if (await FileSystemUtils.fileExists(filePath)) {
-        const body = this.getBody(target.id);
+        const body = this.normalizeBody(this.getBody(target.id));
         await this.updateBody(filePath, body);
         updated.push(target.path);
       }
@@ -70,6 +69,20 @@ export abstract class SlashCommandConfigurator {
     return TemplateManager.getSlashCommandBody(id).trim();
   }
 
+  private normalizeBody(body: string): string {
+    const trimmed = body.trimStart();
+    if (trimmed.startsWith('---')) {
+      const end = trimmed.indexOf('\n---', 3);
+      if (end !== -1) {
+        const after = trimmed.slice(end + '\n---'.length);
+        // Drop one optional blank line after closing fence
+        const withoutLeadingBlank = after.replace(/^\s*\n/, '');
+        return withoutLeadingBlank.trim();
+      }
+    }
+    return body.trim();
+  }
+
   // Resolve absolute path for a given slash command target. Subclasses may override
   // to redirect to tool-specific locations (e.g., global directories).
   resolveAbsolutePath(projectPath: string, id: SlashCommandId): string {
@@ -79,17 +92,22 @@ export abstract class SlashCommandConfigurator {
 
   protected async updateBody(filePath: string, body: string): Promise<void> {
     const content = await FileSystemUtils.readFile(filePath);
-    const startIndex = content.indexOf(OPENSPEC_MARKERS.start);
-    const endIndex = content.indexOf(OPENSPEC_MARKERS.end);
 
-    if (startIndex === -1 || endIndex === -1 || endIndex <= startIndex) {
-      throw new Error(`Missing OpenSpec markers in ${filePath}`);
+    // If file contains frontmatter (starts with ---), preserve it and replace body after the first blank line following frontmatter.
+    if (content.startsWith('---')) {
+      const endOfFrontmatter = content.indexOf('\n---', 3);
+      if (endOfFrontmatter !== -1) {
+        const fmEnd = endOfFrontmatter + '\n---'.length;
+        // Find first blank line after frontmatter to separate sections
+        const rest = content.slice(fmEnd);
+        const bodyStart = rest.match(/^\s*\n/) ? fmEnd + rest.match(/^\s*\n/)![0].length : fmEnd;
+        const updated = content.slice(0, bodyStart) + '\n' + body.trim() + '\n';
+        await FileSystemUtils.writeFile(filePath, updated);
+        return;
+      }
     }
 
-    const before = content.slice(0, startIndex + OPENSPEC_MARKERS.start.length);
-    const after = content.slice(endIndex);
-    const updatedContent = `${before}\n${body}\n${after}`;
-
-    await FileSystemUtils.writeFile(filePath, updatedContent);
+    // Fallback: replace entire file with body (no OPENSPEC markers anymore)
+    await FileSystemUtils.writeFile(filePath, body.trim() + '\n');
   }
 }

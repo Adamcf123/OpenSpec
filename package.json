@@ -50,7 +50,12 @@
     "release": "pnpm run release:ci",
     "release:ci": "pnpm run check:pack-version && pnpm exec changeset publish",
     "release:local": "pnpm exec changeset version && pnpm run check:pack-version && pnpm exec changeset publish",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "logs:summary": "node tools/logs/summary.mjs",
+    "logs:errors": "node tools/logs/errors.mjs",
+    "logs:view": "node tools/logs/view.mjs",
+    "logs:prune": "node tools/logs/prune.mjs",
+    "logs:compact": "node tools/logs/compact.mjs"
   },
   "engines": {
     "node": ">=20.19.0"

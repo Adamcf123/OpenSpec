@@ -1,0 +1,46 @@
+---
+description: 实施已批准的 OpenSpec 变更；严格按 tasks.md 执行并产出证据
+argument-hint: [change-id|query]
+allowed-tools: *
+---
+
+## Guardrails
+- 仅以完成 tasks.md 为导向落实改动，避免无关重构。
+- 任何勾选必须有客观证据支撑（测试、日志、命令输出、diff）。
+- 新取舍务必记录在 design.md 并保持最小变更面。
+
+## 上下文
+- 规范：@openspec/AGENTS.md
+- 变更检索：!`openspec list`
+- 命中后读取：@openspec/changes/<id>/proposal.md
+- 命中后读取：@openspec/changes/<id>/design.md
+- 命中后读取：@openspec/changes/<id>/tasks.md
+
+## 参数解析
+- `$ARGUMENTS` 为 `change-id` 或检索关键词；多命中时停止并要求提供更精确 ID。
+
+## 执行原则
+- 先完成后勾选：完成每项任务并生成证据后，再更新 tasks.md。
+- 证据优先：每项任务需有明确输入/操作/产出与验证钩子。
+- 文档同步：新增取舍在 design.md 记录并与 proposal.md 保持一致。
+
+## 执行步骤（逐任务闭环）
+- [ ] 获取变更 ID：设置 `ID=<change-id>` 或从上下文/检索中确认
+- [ ] 研读范围与验收：@openspec/changes/<id>/{proposal.md,design.md,tasks.md}
+- [ ] 逐项执行 tasks.md：
+  - 在开始前核对强制字段是否齐全（路径/函数签名/错误处理/测试用例/输入-操作-产出/证据钩子/边界与失败/验收信号）
+  - 实施改动并最小化影响面（用 Read/Edit/Write/Grep/Glob 定位和修改）
+  - 生成证据（测试、日志、复现命令、diff 摘要）并归档路径
+  - 更新 design.md 决策/权衡
+  - 在 tasks.md 将该任务标为 `- [x]` 并附证据引用
+- [ ] 严格校验：`openspec validate "$ID" --strict`
+
+## 验收标准
+- tasks.md 全部打勾，且每项附有可验证证据。
+- design.md 已同步所有新增决策与取舍。
+- `openspec validate "$ID" --strict` 通过。
+
+## 返回内容
+- 任务完成概览（总数/已完成/剩余 0）
+- 证据清单（每项任务 1–2 条）
+- 关键变更文件路径列表（相对路径）

@@ -649,15 +649,18 @@ export class InitCommand {
     projectPath: string,
     toolId: string
   ): Promise<boolean> {
-    // A tool is only considered "configured by OpenSpec" if its files contain OpenSpec markers.
-    // For tools with both config files and slash commands, BOTH must have markers.
-    // For slash commands, at least one file with markers is sufficient (not all required).
+    // A tool is considered configured if expected files exist (frontmatter-based for slash commands)
+    // Backward compatibility: still treat files with legacy OPENSPEC markers as configured.
 
-    // Helper to check if a file exists and contains OpenSpec markers
-    const fileHasMarkers = async (absolutePath: string): Promise<boolean> => {
+    const fileLooksConfigured = async (absolutePath: string): Promise<boolean> => {
       try {
         const content = await FileSystemUtils.readFile(absolutePath);
-        return content.includes(OPENSPEC_MARKERS.start) && content.includes(OPENSPEC_MARKERS.end);
+        // New format: frontmatter starts with '---' OR any non-empty content
+        if (content.trim().startsWith('---')) return true;
+        // Legacy markers
+        if (content.includes(OPENSPEC_MARKERS.start) && content.includes(OPENSPEC_MARKERS.end)) return true;
+        // Fallback: non-empty file counts as configured for slash commands
+        return content.trim().length > 0;
       } catch {
         return false;
       }
@@ -666,21 +669,21 @@ export class InitCommand {
     let hasConfigFile = false;
     let hasSlashCommands = false;
 
-    // Check if the tool has a config file with OpenSpec markers
+    // Check if the tool has a config file
     const configFile = ToolRegistry.get(toolId)?.configFileName;
     if (configFile) {
       const configPath = path.join(projectPath, configFile);
-      hasConfigFile = (await FileSystemUtils.fileExists(configPath)) && (await fileHasMarkers(configPath));
+      hasConfigFile = (await FileSystemUtils.fileExists(configPath)) && (await fileLooksConfigured(configPath));
     }
 
-    // Check if any slash command file exists with OpenSpec markers
+    // Check if any slash command file exists and looks configured (frontmatter or legacy markers)
     const slashConfigurator = SlashCommandRegistry.get(toolId);
     if (slashConfigurator) {
       for (const target of slashConfigurator.getTargets()) {
         const absolute = slashConfigurator.resolveAbsolutePath(projectPath, target.id);
-        if ((await FileSystemUtils.fileExists(absolute)) && (await fileHasMarkers(absolute))) {
+        if ((await FileSystemUtils.fileExists(absolute)) && (await fileLooksConfigured(absolute))) {
           hasSlashCommands = true;
-          break; // At least one file with markers is sufficient
+          break; // At least one file is sufficient
         }
       }
     }
@@ -744,6 +747,13 @@ export class InitCommand {
 
     for (const template of templates) {
       const filePath = path.join(openspecPath, template.path);
+
+      if (
+        template.path === 'project.md' &&
+        (await FileSystemUtils.fileExists(filePath))
+      ) {
+        continue;
+      }
 
       const content =
         typeof template.content === 'function'

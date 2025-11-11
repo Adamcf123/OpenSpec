@@ -5,11 +5,13 @@ import { SlashCommandId, TemplateManager } from "../../templates/index.js";
 import { FileSystemUtils } from "../../../utils/file-system.js";
 import { OPENSPEC_MARKERS } from "../../config.js";
 
+export const CODEX_CLI_PROMPTS_BASE_PATH = ".codex/prompts";
+
 // Use POSIX-style paths for consistent logging across platforms.
-const FILE_PATHS: Record<SlashCommandId, string> = {
-  proposal: ".codex/prompts/openspec-proposal.md",
-  apply: ".codex/prompts/openspec-apply.md",
-  archive: ".codex/prompts/openspec-archive.md",
+export const CODEX_CLI_PROMPT_PATHS: Record<SlashCommandId, string> = {
+  proposal: `${CODEX_CLI_PROMPTS_BASE_PATH}/openspec-proposal.md`,
+  apply: `${CODEX_CLI_PROMPTS_BASE_PATH}/openspec-apply.md`,
+  archive: `${CODEX_CLI_PROMPTS_BASE_PATH}/openspec-archive.md`,
 };
 
 export class CodexSlashCommandConfigurator extends SlashCommandConfigurator {
@@ -17,7 +19,7 @@ export class CodexSlashCommandConfigurator extends SlashCommandConfigurator {
   readonly isAvailable = true;
 
   protected getRelativePath(id: SlashCommandId): string {
-    return FILE_PATHS[id];
+    return CODEX_CLI_PROMPT_PATHS[id];
   }
 
   protected getFrontmatter(id: SlashCommandId): string | undefined {
@@ -62,7 +64,7 @@ $ARGUMENTS`,
       const promptsDir = this.getGlobalPromptsDir();
       const filePath = FileSystemUtils.joinPath(
         promptsDir,
-        path.basename(target.path)
+        path.basename(CODEX_CLI_PROMPT_PATHS[target.id])
       );
 
       await FileSystemUtils.createDirectory(path.dirname(filePath));
@@ -88,7 +90,7 @@ $ARGUMENTS`,
       const promptsDir = this.getGlobalPromptsDir();
       const filePath = FileSystemUtils.joinPath(
         promptsDir,
-        path.basename(target.path)
+        path.basename(CODEX_CLI_PROMPT_PATHS[target.id])
       );
       if (await FileSystemUtils.fileExists(filePath)) {
         const body = TemplateManager.getSlashCommandBody(target.id).trim();
@@ -120,7 +122,7 @@ $ARGUMENTS`,
   // Resolve to the global prompts location for configuration detection
   resolveAbsolutePath(_projectPath: string, id: SlashCommandId): string {
     const promptsDir = this.getGlobalPromptsDir();
-    const fileName = path.basename(FILE_PATHS[id]);
+    const fileName = path.basename(CODEX_CLI_PROMPT_PATHS[id]);
     return FileSystemUtils.joinPath(promptsDir, fileName);
   }
 }

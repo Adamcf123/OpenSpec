@@ -1,0 +1,50 @@
+---
+description: 归档 OpenSpec 变更并刷新规格；参数可为 change-id 或检索关键词
+argument-hint: [change-id|query] [--skip-specs]
+allowed-tools: *
+---
+
+## Guardrails
+- 优先最小化实现与最小变更面；仅做达成归档所必需的操作。
+- 严格参考 @openspec/AGENTS.md；遵循现有命名与目录约定。
+- 变更不可识别或存在歧义时立即止损并请求更精确信息。
+- 仅在明确需要时使用 `--skip-specs`；默认路径应刷新并校验规格。
+
+## 上下文
+- 规范：@openspec/AGENTS.md
+- 项目说明：@openspec/project.md
+- 变更列表：!`openspec list`
+- 规格总览：!`openspec list --specs`
+
+## 参数解析与分支
+- 若 `$ARGUMENTS` 为明确 `change-id`（`openspec show $ARGUMENTS` 成功），直接使用该 ID。
+- 否则将 `$ARGUMENTS` 视作检索关键词，从 `openspec list` 中过滤候选：
+  - 唯一命中：采用该候选作为 `change-id`。
+  - 多个命中：按相似度与更新时间列出前 5 条候选并停止，提示用户提供更精确 ID 重新执行。
+  - 无命中：停止并提示无匹配项。
+- 如果包含 `--skip-specs`，仅在工具类或不影响规格的归档中使用；否则不要添加。
+
+## 先决条件（任一不满足则停止）
+- 目标变更存在且未位于归档目录（例如：`openspec show "$ID"`）。
+- 未检测到阻塞性校验错误（默认走严格路径；若使用 `--skip-specs` 则需在“失败与回滚”中说明风险）。
+
+## 执行步骤（逐项完成）
+- [ ] 获取变更 ID：设置 `ID=<change-id>` 或从上下文/检索中确认
+- [ ] 身份确认与二次校验：`openspec show "$ID"`
+- [ ] 执行归档：`openspec archive "$ID" --yes`（必要时附 `--skip-specs`）
+- [ ] 结果核验（位置迁移到 `openspec/changes/archive/`）：`openspec show "$ID"`
+- [ ] 严格校验：`openspec validate --strict`
+
+## 验收标准
+- `$ID` 已位于 `openspec/changes/archive/`。
+- `openspec validate --strict` 无错误与警告。
+- 若未使用 `--skip-specs`，`openspec list --specs` 应体现相应刷新。
+
+## 失败与回滚
+- 任一步失败立即停止并回显上一条命令输出；不得在未知状态下继续。
+- 若严格校验失败：记录错误摘要，停止；可由用户评估后使用 `--skip-specs` 重试（仅当变更性质允许且风险可控）。
+
+## 返回内容（请在回复中结构化输出）
+- 归档目标：`$ID` 与来源/目标路径。
+- 关键 CLI 输出摘要（≤50 行）。
+- 受影响文件路径 Top-N（相对路径）。

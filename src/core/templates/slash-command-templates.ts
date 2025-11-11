@@ -15,10 +15,11 @@ const proposalSteps = `**Steps**
 4. Capture architectural reasoning in \`design.md\`, documenting context, goals/non-goals, architecture overview, explicit decision records, failure modes, rollout/rollback strategy, and the end-to-end test plan before committing to specs.
 5. Draft spec deltas in \`changes/<id>/specs/<capability>/spec.md\` (one folder per capability) using \`## ADDED|MODIFIED|REMOVED Requirements\` with at least one \`#### Scenario:\` per requirement and cross-reference related capabilities when relevant.
 6. Draft \`tasks.md\` as an ordered list of small, verifiable work items grouped by discovery, implementation, validation, and rollout so each task has a clear input/output and validation hook.
-7. Validate with \`openspec validate <id> --strict\` and resolve every issue before sharing the proposal.`;
+7. Set \`ID=<change-id>\` (or capture it from CLI output) so follow-up commands reuse the same value.
+8. Validate with \`openspec validate "$ID" --strict\` and resolve every issue before sharing the proposal.`;
 
 const proposalReferences = `**Reference**
-- Use \`openspec show <id> --json --deltas-only\` or \`openspec show <spec> --type spec\` to inspect details when validation fails.
+- Use \`openspec show "$ID" --json --deltas-only\` or \`openspec show <spec> --type spec\` to inspect details when validation fails.
 - Search existing requirements with \`rg -n "Requirement:|Scenario:" openspec/specs\` before writing new ones.
 - Explore the codebase with \`rg <keyword>\`, \`ls\`, or direct file reads so proposals align with current implementation realities.`;
 
@@ -31,7 +32,7 @@ Track these steps as TODOs and complete them one by one.
 5. Reference \`openspec list\` or \`openspec show <item>\` when additional context is required.`;
 
 const applyReferences = `**Reference**
-- Use \`openspec show <id> --json --deltas-only\` if you need additional context from the proposal while implementing.`;
+- Use \`openspec show "$ID" --json --deltas-only\` if you need additional context from the proposal while implementing.`;
 
 const archiveSteps = `**Steps**
 1. Determine the change ID to archive:
@@ -39,10 +40,10 @@ const archiveSteps = `**Steps**
    - If the conversation references a change loosely (for example by title or summary), run \`openspec list\` to surface likely IDs, share the relevant candidates, and confirm which one the user intends.
    - Otherwise, review the conversation, run \`openspec list\`, and ask the user which change to archive; wait for a confirmed change ID before proceeding.
    - If you still cannot identify a single change ID, stop and tell the user you cannot archive anything yet.
-2. Validate the change ID by running \`openspec list\` (or \`openspec show <id>\`) and stop if the change is missing, already archived, or otherwise not ready to archive.
-3. Run \`openspec archive <id> --yes\` so the CLI moves the change and applies spec updates without prompts (use \`--skip-specs\` only for tooling-only work).
+2. Once you confirm the intended target, set \`ID=<change-id>\` (or capture it from CLI output) and run \`openspec show "$ID"\`; stop if the change is missing, already archived, or otherwise not ready to archive.
+3. Run \`openspec archive "$ID" --yes\` so the CLI moves the change and applies spec updates without prompts (use \`--skip-specs\` only for tooling-only work).
 4. Review the command output to confirm the target specs were updated and the change landed in \`changes/archive/\`.
-5. Validate with \`openspec validate --strict\` and inspect with \`openspec show <id>\` if anything looks off.`;
+5. Validate with \`openspec validate --strict\` and inspect with \`openspec show "$ID"\` if anything looks off.`;
 
 const archiveReferences = `**Reference**
 - Use \`openspec list\` to confirm change IDs before archiving.
@@ -55,10 +56,13 @@ const slashCommandBodies: Record<SlashCommandId, string> = {
 };
 
 export function getSlashCommandBody(id: SlashCommandId): string {
-  // Prefer external text templates under ./slash-bodies/*.txt if present,
+  // Prefer external text templates under ./claude-code-cli-slash-commands-templates/*.txt if present,
   // fallback to the built-in string templates to keep backward compatibility.
   try {
-    const url = new URL(`./slash-bodies/${id}.txt`, import.meta.url);
+    const url = new URL(
+      `./claude-code-cli-slash-commands-templates/${id}.txt`,
+      import.meta.url
+    );
     const content = fs.readFileSync(url, 'utf-8');
     const trimmed = content.trim();
     return trimmed.length ? trimmed : slashCommandBodies[id];
